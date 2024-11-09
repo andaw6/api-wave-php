@@ -9,10 +9,10 @@ use Illuminate\Support\Str;
 class Account extends Model
 {
     use HasFactory;
-    
+
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = ['id', 'userId', 'balance', 'currency', 'qrCode', 'isActive', 'plafond'];
     protected $casts = [
         'id' => 'string',
