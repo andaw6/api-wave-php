@@ -4,11 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\Company;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class CompanySeeder extends Seeder
 {
     public function run()
     {
+
+        DB::table('companies')->truncate();
         $companyExample = [
             ['type' => 'ELECTRICITY', 'name' => 'Senelec', 'icon' => 'https://www.senelec.sn/assets/uploads/media-uploader/logo1637145113.png'],
             ['type' => 'WATER', 'name' => 'SDE', 'icon' => 'https://upload.wikimedia.org/wikipedia/fr/e/ed/Logo_SDE_S%C3%A9n%C3%A9gal.jpg'],

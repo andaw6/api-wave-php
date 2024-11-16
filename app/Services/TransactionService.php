@@ -13,6 +13,8 @@ use App\Models\CreditPurchaseTransaction;
 use App\Services\interface\AccountServiceInterface;
 use App\Services\interface\TransactionServiceInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
+use PhpParser\Node\Expr\Cast\Array_;
 
 class TransactionService extends Service implements TransactionServiceInterface
 {
@@ -133,7 +135,7 @@ class TransactionService extends Service implements TransactionServiceInterface
                 'receiverId' => $receiverAccount->userId,
                 'sender' => $senderAccount->user, // Assurez-vous que 'user' est bien la relation vers l'utilisateur
                 'receiver' => $receiverAccount->user, // Idem ici
-                'amount' => $amount - $feeAmount,
+                'amount' => $amount,
                 'feeAmount' => $feeAmount,
                 'transactionType' => $transactionType,
                 'status' => Transaction::STATUS_PENDING,
@@ -193,4 +195,94 @@ class TransactionService extends Service implements TransactionServiceInterface
             return $transaction;
         });
     }
+
+
+    public function createBatchTransfers(
+        string $senderPhoneNumber,
+        array $recipients,
+        string $currency = "    XOR",
+        float $feeAmount = 0
+    ): array
+    {
+        $transactions = [];
+
+        foreach ($recipients as $recipient) {
+            $transaction = $this->createTransaction(
+                $senderPhoneNumber,
+                $recipient['phoneNumber'],
+                $recipient['amount'],
+                $feeAmount,
+                $currency,
+                Transaction::TYPE_TRANSFER
+            );
+            $transactions[] = $transaction;
+        }
+
+        return $transactions;
+    }
+
+
+    public function tranferMultiple(array $data){
+        $amount = intval($data['amount']);
+        $currency = $data['currency'] ?? "XOR";
+        $feeAmount = intval($data['feeAmount'] ?? 0);
+        $recipients = $data['recipients'] ?? [];
+
+        // Get the user account and balance
+        $userAccount = User::with(['account'])->find(Auth::user()->id)->account;
+        $balance = intval($userAccount->balance);
+
+        // Initialize lists for successful and unsuccessful transactions
+        $successfulRecipients = [];
+        $unsuccessfulRecipients = [];
+
+        DB::beginTransaction();
+        // Calculate total required for each transaction (amount + fee)
+        $transactionCost = $amount + $feeAmount;
+
+        foreach ($recipients as $recipient) {
+            // Check if there is enough balance for this transaction
+            if ($balance >= $transactionCost) {
+
+                $this->createTransaction(
+                    Auth::user()->phoneNumber,
+                    $recipient['phone'],
+                    $amount,
+                    $feeAmount,
+                    $currency,
+                    Transaction::TYPE_TRANSFER
+                );
+
+                $successfulRecipients[] = [
+                    'phone' => $recipient['phone'],
+                    'amount' => $amount,
+                    'fee' => $feeAmount
+                ];
+
+                // Deduct the transaction cost from the balance
+                $balance -= $transactionCost;
+            } else {
+                // Add to the list of unsuccessful transactions due to insufficient funds
+                $unsuccessfulRecipients[] = [
+                    'phone' => $recipient['phone'],
+                    'reason' => 'Insufficient balance'
+                ];
+            }
+        }
+        DB::commit();
+
+        // Return a response with successful and unsuccessful transactions
+        return response()->json([
+            "montant_initial"=>intval($userAccount->balance),
+            "montant_restant"=> $balance,
+            'success' => [
+                'recipients' => $successfulRecipients,
+            ],
+            'failed' => [
+                'recipients' => $unsuccessfulRecipients,
+                'reason' => 'Insufficient balance for some recipients'
+            ]
+        ]);
+    }
+
 }

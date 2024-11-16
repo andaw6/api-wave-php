@@ -28,7 +28,7 @@ class UserController extends Controller
 
     public function getUserById(string $id): JsonResponse
     {
-        $user = $this->userService->getUserById($id);
+        $user = $this->userService->getUserById($id); 
 
         if (!$user) {
             return response()->json(['error' => 'Utilisateur non trouvé'], 404);
@@ -66,18 +66,20 @@ class UserController extends Controller
     {
         return $this->tryCatch(function () use ($request) {
             $user = Auth::user();
-    
-            
             if (!$user) {
                 return $this->createErrorResponse('Utilisateur non trouvé');
             }
 
-            
-    
             $userData = $this->userService->getCurrentUser($user);
-    
-            return $this->createSuccessResponse('Utilisateur récupéré avec succès', $userData);
+            if ($userData) {
+                return $this->createSuccessResponse('Utilisateur récupéré avec succès', [
+                    'name' => $userData->name,
+                    'balance' => $userData->account->balance,
+                ]);
+            } else {
+                return $this->createErrorResponse('Impossible de récupérer les informations de l\'utilisateur');
+            }
         });
     }
-    
+
 }

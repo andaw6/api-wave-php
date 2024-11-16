@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreditRequest;
+use App\Http\Requests\TransactionMultipleRequest;
 use App\Http\Requests\TransactionRequest;
 use App\Models\Transaction;
 use App\Models\User;
@@ -12,13 +13,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 class TransactionController extends Controller
 {
     protected $transactionService;
 
     public function __construct(TransactionServiceInterface $transactionService)
     {
-        $this->transactionService = $transactionService;
+        $this->transactionService = $transactionService; 
     }
 
     private function validateData(string $key, array $data): array
@@ -135,6 +137,50 @@ class TransactionController extends Controller
                 'message' => "Une erreur est survenue lors de la création de la transaction.",
                 'data' => $e->getMessage(),
             ];
+        }
+    }
+
+
+    public function tranferMultiple(TransactionMultipleRequest $request){
+        $data = $request->validated();
+        return $this->transactionService->tranferMultiple($data);
+        // return $this->handleTransferManyTransaction($data);
+    }
+
+
+        public function transferMany(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'senderPhoneNumber' => 'required|string',
+            'recipients' => 'required|array',
+            'recipients.*.phoneNumber' => 'required|string',
+            'recipients.*.amount' => 'required|numeric',
+            'currency' => 'string|default:XOR',
+            'feeAmount' => 'numeric|default:0',
+        ]);
+
+        $senderPhoneNumber = $data['senderPhoneNumber'];
+        $recipients = $data['recipients'];
+        $currency = $data['currency'];
+        $feeAmount = $data['feeAmount'];
+
+        try {
+            $transactions = $this->transactionService->createBatchTransfers(
+                $senderPhoneNumber,
+                $recipients,
+                $currency,
+                $feeAmount
+            );
+
+            return response()->json([
+                'message' => 'Transferts effectués avec succès',
+                'data' => $transactions,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Une erreur est survenue lors des transferts',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

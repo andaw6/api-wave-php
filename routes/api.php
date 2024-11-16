@@ -7,6 +7,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TransactionController;
+    use App\Http\Controllers\ScheduledTransferController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\RoleMiddleware;
 
@@ -38,18 +39,23 @@ Route::middleware(['jwt.auth'])->group(function () {
     // Route pour la ressource Transaction
     Route::prefix("transactions")->group(function () {
         Route::middleware([RoleMiddleware::class . ':ADMIN,AGENT'])->group(function () {
-            Route::get("/", [RoleMiddleware::class, 'getAllTransactions']); // Récupère toutes les transactions
+            Route::get("/all", [RoleMiddleware::class, 'getAllTransactions']); // Récupère toutes les transactions
         });
 
         Route::middleware([RoleMiddleware::class . ':VENDOR,CLIENT'])->group(function () {
             Route::get("/current", [TransactionController::class, "getTransactionsByUser"]); // Récupère les transactions de l'utilisateur authentifié
-            Route::post("/transfer", [TransactionController::class, "transfer"]); // Effectue un transfert de fonds
             Route::post("/purchase", [TransactionController::class, "purchase"]); // Effectue un achat
         });
 
         Route::middleware([RoleMiddleware::class . ':VENDOR'])->group(function(){
             Route::post("/withdraw", [TransactionController::class, "withdraw"]); // Retire des fonds
+            Route::post("/transfer", [TransactionController::class, "transfer"]); // Effectue un transfert de fonds
             Route::post("/deposit", [TransactionController::class, "deposit"]); // Dépose des fonds
+        });
+
+
+        Route::middleware([RoleMiddleware::class. ':CLIENT'])->group(function(){
+            Route::post('/transfer-many', [TransactionController::class, 'tranferMultiple']); // transfert groupé
         });
 
         Route::get("/{id}", [TransactionController::class, "getTransaction"]); // Récupère une transaction par ID
@@ -90,4 +96,15 @@ Route::middleware(['jwt.auth'])->group(function () {
         });
     });
 
+
+
+        Route::prefix('scheduled-transfers')->group(function () {
+            Route::post('/', [ScheduledTransferController::class, 'schedule']);
+            Route::get('/', [ScheduledTransferController::class, 'list']);
+            Route::delete('/{id}', [ScheduledTransferController::class, 'cancel']);
+        });
+
+
+
 });
+

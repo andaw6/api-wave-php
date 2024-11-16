@@ -4,15 +4,15 @@ namespace App\Services\interface;
 
 interface TransactionServiceInterface
 {
-    function getTransactionById(    
+    function getTransactionById(
         string $id
     );
     function getAllByUser(
-        string $userId, 
-        $timeFrame = null, 
+        string $userId,
+        $timeFrame = null,
         $page = 1,
-        $limit = 10,        
-        $include = null, 
+        $limit = 10,
+        $include = null,
     );
     function createTransaction(
         string $senderPhoneNumber,
@@ -30,9 +30,18 @@ interface TransactionServiceInterface
         array $purchaseDetails
     );
     function getAll(
-        $timeFrame = null, 
+        $timeFrame = null,
         $page = 1,
-        $limit = 10,        
-        $include = null, 
+        $limit = 10,
+        $include = null,
     );
+
+    public function createBatchTransfers(
+        string $senderPhoneNumber,
+        array $recipients,
+        string $currency = "XOR",
+        float $feeAmount = 0
+    );
+
+    public function tranferMultiple(array $data);
 }

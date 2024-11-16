@@ -8,11 +8,16 @@ use App\Models\Account;
 use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UserSeeder extends Seeder
 {
     public function run()
     {
+
+        // Vide la table users
+        DB::table('users')->truncate();
+
         User::factory()->create([
             'name' => 'Diary Diop',
             'email' => 'diarydiop@gmail.com',

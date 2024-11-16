@@ -20,4 +20,5 @@ class QrCodeService implements QrCodeServiceInterface
         // Convertit le QR code en base64 pour le retourner en tant que chaîne
         return base64_encode($result->getString());
     }
+    
 }
